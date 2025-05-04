@@ -25,26 +25,41 @@ export default function Home() {
 
     try {
       console.log("Initializing database...")
-      const response = await fetch("/api/init-db-direct", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to initialize database")
+      // Try all methods in sequence until one succeeds
+      const methods = ["/api/init-db-direct", "/api/init-db-fallback", "/api/init-db-simple"]
+
+      let success = false
+
+      for (const method of methods) {
+        try {
+          console.log(`Trying initialization method: ${method}`)
+          const response = await fetch(method, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+
+          if (response.ok) {
+            console.log(`Method ${method} succeeded`)
+            success = true
+            break
+          } else {
+            const errorText = await response.text()
+            console.error(`Method ${method} failed:`, response.status, errorText)
+          }
+        } catch (err) {
+          console.error(`Error with method ${method}:`, err)
+        }
       }
 
-      const data = await response.json()
-
-      if (data.success) {
+      if (success) {
         console.log("Database initialized successfully")
         // Reload the page to fetch fresh data
         window.location.reload()
       } else {
-        throw new Error(data.error || "Unknown error occurred")
+        throw new Error("All initialization methods failed")
       }
     } catch (err: any) {
       console.error("Error initializing database:", err)

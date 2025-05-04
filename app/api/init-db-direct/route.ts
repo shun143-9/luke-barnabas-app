@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 
 export async function GET() {
   try {
@@ -9,9 +10,15 @@ export async function GET() {
       return NextResponse.json({ error: "Missing Supabase environment variables" }, { status: 500 })
     }
 
-    // SQL to create all tables
-    const sql = `
-      -- Create livestream table
+    // Create a Supabase client with admin privileges
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    console.log("Creating tables using Supabase client...")
+
+    // Create tables one by one using separate queries to isolate any issues
+
+    // Create livestream table
+    const { error: livestreamError } = await supabase.from("_sql").execute(`
       CREATE TABLE IF NOT EXISTS livestream (
         id SERIAL PRIMARY KEY,
         youtube_id TEXT NOT NULL,
@@ -20,8 +27,18 @@ export async function GET() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-      
-      -- Create sermons table
+    `)
+
+    if (livestreamError) {
+      console.error("Error creating livestream table:", livestreamError)
+      return NextResponse.json(
+        { error: `Failed to create livestream table: ${livestreamError.message}` },
+        { status: 500 },
+      )
+    }
+
+    // Create sermons table
+    const { error: sermonsError } = await supabase.from("_sql").execute(`
       CREATE TABLE IF NOT EXISTS sermons (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         title TEXT NOT NULL,
@@ -32,8 +49,15 @@ export async function GET() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-      
-      -- Create meetings table
+    `)
+
+    if (sermonsError) {
+      console.error("Error creating sermons table:", sermonsError)
+      return NextResponse.json({ error: `Failed to create sermons table: ${sermonsError.message}` }, { status: 500 })
+    }
+
+    // Create meetings table
+    const { error: meetingsError } = await supabase.from("_sql").execute(`
       CREATE TABLE IF NOT EXISTS meetings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         title TEXT NOT NULL,
@@ -45,8 +69,15 @@ export async function GET() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-      
-      -- Create prayer_requests table
+    `)
+
+    if (meetingsError) {
+      console.error("Error creating meetings table:", meetingsError)
+      return NextResponse.json({ error: `Failed to create meetings table: ${meetingsError.message}` }, { status: 500 })
+    }
+
+    // Create prayer_requests table
+    const { error: prayerRequestsError } = await supabase.from("_sql").execute(`
       CREATE TABLE IF NOT EXISTS prayer_requests (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
@@ -58,31 +89,35 @@ export async function GET() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-      
-      -- Insert default livestream if it doesn't exist
-      INSERT INTO livestream (youtube_id, description, is_live)
-      SELECT 'jfKfPfyJRdk', 'Welcome to Luke Barnabas Ministry livestream', false
-      WHERE NOT EXISTS (SELECT 1 FROM livestream LIMIT 1);
-    `
+    `)
 
-    console.log("Executing SQL to create tables...")
+    if (prayerRequestsError) {
+      console.error("Error creating prayer_requests table:", prayerRequestsError)
+      return NextResponse.json(
+        { error: `Failed to create prayer_requests table: ${prayerRequestsError.message}` },
+        { status: 500 },
+      )
+    }
 
-    // Execute SQL using the SQL API
-    const response = await fetch(`${supabaseUrl}/rest/v1/sql`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        Prefer: "resolution=merge-duplicates",
-      },
-      body: JSON.stringify({ query: sql }),
-    })
+    // Insert default livestream data if it doesn't exist
+    const { data: existingData, error: checkError } = await supabase.from("livestream").select("*").limit(1)
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("SQL API error:", errorData)
-      return NextResponse.json({ error: `Failed to execute SQL: ${JSON.stringify(errorData)}` }, { status: 500 })
+    if (checkError) {
+      console.error("Error checking existing livestream data:", checkError)
+      return NextResponse.json({ error: `Failed to check existing data: ${checkError.message}` }, { status: 500 })
+    }
+
+    if (!existingData || existingData.length === 0) {
+      const { error: insertError } = await supabase.from("livestream").insert({
+        youtube_id: "jfKfPfyJRdk",
+        description: "Welcome to Luke Barnabas Ministry livestream",
+        is_live: false,
+      })
+
+      if (insertError) {
+        console.error("Error inserting default livestream:", insertError)
+        return NextResponse.json({ error: `Failed to insert default data: ${insertError.message}` }, { status: 500 })
+      }
     }
 
     console.log("Tables created successfully")
