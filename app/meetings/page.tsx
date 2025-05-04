@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock, MapPin, Video, Loader2 } from "lucide-react"
+import { Clock, MapPin, Video, Loader2, Database } from "lucide-react"
 import { useLanguage } from "@/context/language-context"
 import { useEffect, useState } from "react"
 import { getMeetingsByType, type Meeting } from "@/lib/supabase"
@@ -12,16 +12,99 @@ export default function MeetingsPage() {
   const [morningMeeting, setMorningMeeting] = useState<Meeting | null>(null)
   const [eveningMeeting, setEveningMeeting] = useState<Meeting | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [needsInit, setNeedsInit] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
+  const [initError, setInitError] = useState<string | null>(null)
+
+  // Function to initialize the database tables
+  const initializeDatabase = async () => {
+    setIsInitializing(true)
+    setInitError(null)
+
+    try {
+      // Try the direct SQL approach
+      const response = await fetch("/api/init-db-direct", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to initialize database")
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Reload the page to fetch fresh data
+        window.location.reload()
+      } else {
+        throw new Error(data.error || "Unknown error occurred")
+      }
+    } catch (err: any) {
+      console.error("Error initializing database:", err)
+      setInitError(err.message || "Failed to initialize database. Please try again.")
+    } finally {
+      setIsInitializing(false)
+    }
+  }
 
   useEffect(() => {
     async function fetchMeetings() {
       setLoading(true)
+      setError(null)
+      setNeedsInit(false)
 
-      // Fetch morning meeting
-      const { data: morningData } = await getMeetingsByType("morning")
-      if (morningData) {
-        setMorningMeeting(morningData)
-      } else {
+      try {
+        // Fetch morning meeting
+        const { data: morningData, error: morningError } = await getMeetingsByType("morning")
+
+        if (morningError) {
+          // Check if the error is because the table doesn't exist
+          if (morningError.message?.includes("relation") && morningError.message?.includes("does not exist")) {
+            setNeedsInit(true)
+            return // Stop further processing
+          } else {
+            console.error("Error fetching morning meeting:", morningError)
+          }
+        }
+
+        // Set default morning meeting data
+        setMorningMeeting(
+          morningData || {
+            id: "",
+            title: "Morning Prayer & Devotion",
+            meeting_type: "morning",
+            time: "7:00 AM - 8:00 AM",
+            zoom_link: "https://zoom.us/j/example",
+          },
+        )
+
+        // Fetch evening meeting
+        const { data: eveningData, error: eveningError } = await getMeetingsByType("evening")
+
+        if (eveningError && !eveningError.message?.includes("PGRST116")) {
+          console.error("Error fetching evening meeting:", eveningError)
+        }
+
+        // Set default evening meeting data
+        setEveningMeeting(
+          eveningData || {
+            id: "",
+            title: "Evening Bible Study",
+            meeting_type: "evening",
+            time: "7:30 PM - 9:00 PM",
+            location: "Community Church Hall",
+            maps_link: "https://maps.google.com/?q=Community+Church+Hall",
+          },
+        )
+      } catch (err) {
+        console.error("Exception fetching meetings:", err)
+        setError("An unexpected error occurred")
+
         // Fallback to default values
         setMorningMeeting({
           id: "",
@@ -30,14 +113,7 @@ export default function MeetingsPage() {
           time: "7:00 AM - 8:00 AM",
           zoom_link: "https://zoom.us/j/example",
         })
-      }
 
-      // Fetch evening meeting
-      const { data: eveningData } = await getMeetingsByType("evening")
-      if (eveningData) {
-        setEveningMeeting(eveningData)
-      } else {
-        // Fallback to default values
         setEveningMeeting({
           id: "",
           title: "Evening Bible Study",
@@ -46,18 +122,60 @@ export default function MeetingsPage() {
           location: "Community Church Hall",
           maps_link: "https://maps.google.com/?q=Community+Church+Hall",
         })
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchMeetings()
   }, [])
 
+  // If database needs initialization, show the initialization UI
+  if (needsInit) {
+    return (
+      <div className="flex flex-col space-y-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-6">{translations.meetings.title}</h1>
+
+        <Card className="border-destructive">
+          <CardContent className="pt-6 pb-6 flex flex-col items-center text-center space-y-4">
+            <Database className="h-12 w-12 text-destructive mb-2" />
+            <h2 className="text-xl font-semibold">Database Setup Required</h2>
+            <p className="text-muted-foreground">
+              The meetings table doesn't exist yet. Click the button below to initialize the database.
+            </p>
+
+            {initError && (
+              <div className="p-4 w-full bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground text-left">
+                {initError}
+              </div>
+            )}
+
+            <Button onClick={initializeDatabase} disabled={isInitializing} size="lg" className="mt-2">
+              {isInitializing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Initializing...
+                </>
+              ) : (
+                "Initialize Database"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col space-y-6">
       <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{translations.meetings.title}</h1>
       <p className="text-muted-foreground mb-6">{translations.meetings.subtitle}</p>
+
+      {error && (
+        <div className="p-4 bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground mb-4">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center p-8">

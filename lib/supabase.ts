@@ -51,6 +51,32 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
 )
 
+// Helper function to check if a table exists
+export async function checkTableExists(tableName: string) {
+  try {
+    const { data, error } = await supabase
+      .from("_sql")
+      .select("*")
+      .execute(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public'
+          AND table_name = '${tableName}'
+        );
+      `)
+
+    if (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error)
+      return false
+    }
+
+    return data?.[0]?.exists || false
+  } catch (err) {
+    console.error(`Exception checking if table ${tableName} exists:`, err)
+    return false
+  }
+}
+
 // Authentication helper functions
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -77,6 +103,15 @@ export async function getCurrentUser() {
 // Data fetching functions with error handling
 export async function getLivestream() {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("livestream")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.livestream" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase
       .from("livestream")
       .select("*")
@@ -98,6 +133,15 @@ export async function getLivestream() {
 
 export async function updateLivestream(livestream: Partial<Livestream>) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("livestream")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.livestream" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase
       .from("livestream")
       .upsert({
@@ -123,6 +167,15 @@ export async function updateLivestream(livestream: Partial<Livestream>) {
 
 export async function getSermons() {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("sermons")
+    if (!tableExists) {
+      return {
+        data: [],
+        error: { message: 'relation "public.sermons" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase.from("sermons").select("*").order("date", { ascending: false })
 
     if (error) {
@@ -139,6 +192,15 @@ export async function getSermons() {
 
 export async function getSermon(id: string) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("sermons")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.sermons" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase.from("sermons").select("*").eq("id", id).single()
 
     if (error) {
@@ -155,6 +217,15 @@ export async function getSermon(id: string) {
 
 export async function createSermon(sermon: Omit<Sermon, "id" | "created_at" | "updated_at">) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("sermons")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.sermons" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase
       .from("sermons")
       .insert({
@@ -180,6 +251,15 @@ export async function createSermon(sermon: Omit<Sermon, "id" | "created_at" | "u
 
 export async function updateSermon(id: string, sermon: Partial<Sermon>) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("sermons")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.sermons" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase
       .from("sermons")
       .update({
@@ -203,6 +283,14 @@ export async function updateSermon(id: string, sermon: Partial<Sermon>) {
 
 export async function deleteSermon(id: string) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("sermons")
+    if (!tableExists) {
+      return {
+        error: { message: 'relation "public.sermons" does not exist' },
+      }
+    }
+
     const { error } = await supabase.from("sermons").delete().eq("id", id)
 
     if (error) {
@@ -219,6 +307,15 @@ export async function deleteSermon(id: string) {
 
 export async function getMeetings() {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("meetings")
+    if (!tableExists) {
+      return {
+        data: [],
+        error: { message: 'relation "public.meetings" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase.from("meetings").select("*")
 
     if (error) {
@@ -235,6 +332,15 @@ export async function getMeetings() {
 
 export async function getMeetingsByType(type: string) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("meetings")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.meetings" does not exist' },
+      }
+    }
+
     const { data, error } = await supabase
       .from("meetings")
       .select("*")
@@ -258,6 +364,15 @@ export async function getMeetingsByType(type: string) {
 
 export async function updateMeeting(meeting: Partial<Meeting>) {
   try {
+    // First check if the table exists
+    const tableExists = await checkTableExists("meetings")
+    if (!tableExists) {
+      return {
+        data: null,
+        error: { message: 'relation "public.meetings" does not exist' },
+      }
+    }
+
     // Create a clean object without undefined values
     const cleanMeeting = Object.fromEntries(
       Object.entries({
