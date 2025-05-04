@@ -24,9 +24,9 @@ export default function Home() {
     setInitError(null)
 
     try {
-      // Try the direct SQL approach first
+      // Use GET method instead of POST
       const response = await fetch("/api/init-db-direct", {
-        method: "POST",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },

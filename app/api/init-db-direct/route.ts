@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-export async function POST() {
+export async function GET() {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -11,78 +11,89 @@ export async function POST() {
     }
 
     // Create a Supabase client with admin privileges
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    })
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Use the REST API directly to execute SQL
-    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        Prefer: "resolution=merge-duplicates",
-      },
-      body: JSON.stringify({
-        query: `
-          -- Create livestream table
-          CREATE TABLE IF NOT EXISTS livestream (
-            id SERIAL PRIMARY KEY,
-            youtube_id TEXT NOT NULL,
-            description TEXT,
-            is_live BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          
-          -- Create sermons table
-          CREATE TABLE IF NOT EXISTS sermons (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            title TEXT NOT NULL,
-            description TEXT,
-            date DATE NOT NULL,
-            youtube_url TEXT NOT NULL,
-            thumbnail_url TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          
-          -- Create meetings table
-          CREATE TABLE IF NOT EXISTS meetings (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            title TEXT NOT NULL,
-            meeting_type TEXT NOT NULL,
-            time TEXT NOT NULL,
-            location TEXT,
-            zoom_link TEXT,
-            maps_link TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-          
-          -- Create prayer_requests table
-          CREATE TABLE IF NOT EXISTS prayer_requests (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            email TEXT,
-            phone TEXT,
-            request TEXT NOT NULL,
-            is_private BOOLEAN DEFAULT FALSE,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          );
-        `,
-      }),
-    })
+    // Check if tables exist by trying to select from them
+    const { error: livestreamError } = await supabase.from("livestream").select("id").limit(1)
+    const { error: sermonsError } = await supabase.from("sermons").select("id").limit(1)
+    const { error: meetingsError } = await supabase.from("meetings").select("id").limit(1)
+    const { error: prayerRequestsError } = await supabase.from("prayer_requests").select("id").limit(1)
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      return NextResponse.json({ error: `Failed to create tables: ${JSON.stringify(errorData)}` }, { status: 500 })
+    // Create tables if they don't exist
+    if (livestreamError && livestreamError.message.includes("does not exist")) {
+      // Create livestream table using standard SQL
+      const { error } = await supabase.schema.createTable("livestream", {
+        id: { type: "serial", primaryKey: true },
+        youtube_id: { type: "text", notNull: true },
+        description: { type: "text" },
+        is_live: { type: "boolean", default: false },
+        created_at: { type: "timestamp with time zone", default: "now()" },
+        updated_at: { type: "timestamp with time zone", default: "now()" },
+      })
+
+      if (error) {
+        console.error("Error creating livestream table:", error)
+        return NextResponse.json({ error: `Failed to create livestream table: ${error.message}` }, { status: 500 })
+      }
+    }
+
+    if (sermonsError && sermonsError.message.includes("does not exist")) {
+      // Create sermons table
+      const { error } = await supabase.schema.createTable("sermons", {
+        id: { type: "uuid", primaryKey: true, default: "gen_random_uuid()" },
+        title: { type: "text", notNull: true },
+        description: { type: "text" },
+        date: { type: "date", notNull: true },
+        youtube_url: { type: "text", notNull: true },
+        thumbnail_url: { type: "text" },
+        created_at: { type: "timestamp with time zone", default: "now()" },
+        updated_at: { type: "timestamp with time zone", default: "now()" },
+      })
+
+      if (error) {
+        console.error("Error creating sermons table:", error)
+        return NextResponse.json({ error: `Failed to create sermons table: ${error.message}` }, { status: 500 })
+      }
+    }
+
+    if (meetingsError && meetingsError.message.includes("does not exist")) {
+      // Create meetings table
+      const { error } = await supabase.schema.createTable("meetings", {
+        id: { type: "uuid", primaryKey: true, default: "gen_random_uuid()" },
+        title: { type: "text", notNull: true },
+        meeting_type: { type: "text", notNull: true },
+        time: { type: "text", notNull: true },
+        location: { type: "text" },
+        zoom_link: { type: "text" },
+        maps_link: { type: "text" },
+        created_at: { type: "timestamp with time zone", default: "now()" },
+        updated_at: { type: "timestamp with time zone", default: "now()" },
+      })
+
+      if (error) {
+        console.error("Error creating meetings table:", error)
+        return NextResponse.json({ error: `Failed to create meetings table: ${error.message}` }, { status: 500 })
+      }
+    }
+
+    if (prayerRequestsError && prayerRequestsError.message.includes("does not exist")) {
+      // Create prayer_requests table
+      const { error } = await supabase.schema.createTable("prayer_requests", {
+        id: { type: "uuid", primaryKey: true, default: "gen_random_uuid()" },
+        name: { type: "text", notNull: true },
+        email: { type: "text" },
+        phone: { type: "text" },
+        request: { type: "text", notNull: true },
+        is_private: { type: "boolean", default: false },
+        status: { type: "text", default: "'pending'" },
+        created_at: { type: "timestamp with time zone", default: "now()" },
+        updated_at: { type: "timestamp with time zone", default: "now()" },
+      })
+
+      if (error) {
+        console.error("Error creating prayer_requests table:", error)
+        return NextResponse.json({ error: `Failed to create prayer_requests table: ${error.message}` }, { status: 500 })
+      }
     }
 
     // Insert default livestream data if it doesn't exist
@@ -116,7 +127,7 @@ export async function POST() {
   }
 }
 
-// Also support GET for easier testing
-export async function GET() {
-  return POST()
+// Also support POST for compatibility
+export async function POST() {
+  return GET()
 }
