@@ -24,7 +24,7 @@ export default function Home() {
     setInitError(null)
 
     try {
-      // Use GET method instead of POST
+      console.log("Initializing database...")
       const response = await fetch("/api/init-db-direct", {
         method: "GET",
         headers: {
@@ -40,6 +40,7 @@ export default function Home() {
       const data = await response.json()
 
       if (data.success) {
+        console.log("Database initialized successfully")
         // Reload the page to fetch fresh data
         window.location.reload()
       } else {
@@ -73,7 +74,10 @@ export default function Home() {
 
           // Check if the error is because the table doesn't exist
           if (error.message?.includes("relation") && error.message?.includes("does not exist")) {
+            console.log("Tables don't exist, initializing database automatically...")
             setNeedsInit(true)
+            // Automatically initialize the database
+            initializeDatabase()
           } else {
             setError("Failed to load livestream data")
           }
@@ -111,25 +115,31 @@ export default function Home() {
             <Database className="h-12 w-12 text-destructive mb-2" />
             <h2 className="text-xl font-semibold">Database Setup Required</h2>
             <p className="text-muted-foreground">
-              The database tables don't exist yet. Click the button below to initialize the database.
+              The database tables don't exist yet. We're initializing the database now...
             </p>
 
-            {initError && (
-              <div className="p-4 w-full bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground text-left">
-                {initError}
+            {initError ? (
+              <>
+                <div className="p-4 w-full bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground text-left">
+                  {initError}
+                </div>
+                <Button onClick={initializeDatabase} disabled={isInitializing} size="lg" className="mt-2">
+                  {isInitializing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing...
+                    </>
+                  ) : (
+                    "Try Again"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Setting up database...</span>
               </div>
             )}
-
-            <Button onClick={initializeDatabase} disabled={isInitializing} size="lg" className="mt-2">
-              {isInitializing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Initializing...
-                </>
-              ) : (
-                "Initialize Database"
-              )}
-            </Button>
           </CardContent>
         </Card>
 

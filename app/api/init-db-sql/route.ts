@@ -65,8 +65,6 @@ export async function GET() {
       WHERE NOT EXISTS (SELECT 1 FROM livestream LIMIT 1);
     `
 
-    console.log("Executing SQL to create tables...")
-
     // Execute SQL using the SQL API
     const response = await fetch(`${supabaseUrl}/rest/v1/sql`, {
       method: "POST",
@@ -85,7 +83,6 @@ export async function GET() {
       return NextResponse.json({ error: `Failed to execute SQL: ${JSON.stringify(errorData)}` }, { status: 500 })
     }
 
-    console.log("Tables created successfully")
     return NextResponse.json({ success: true, message: "Database initialized successfully" })
   } catch (error: any) {
     console.error("Error initializing database:", error)
