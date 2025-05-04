@@ -5,75 +5,88 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { useLanguage } from "@/context/language-context"
-
-// In a real app, this would come from your database
-const sermons = [
-  {
-    id: "1",
-    title: "Finding Peace in God's Promises",
-    date: "May 1, 2023",
-    description: "Pastor Luke explores how God's promises can bring peace in our daily lives.",
-    thumbnailUrl: "/placeholder.svg?height=200&width=350",
-    youtubeUrl: "https://www.youtube.com/watch?v=example1",
-  },
-  {
-    id: "2",
-    title: "The Power of Prayer",
-    date: "April 28, 2023",
-    description: "Learn how prayer can transform your relationship with God and others around you.",
-    thumbnailUrl: "/placeholder.svg?height=200&width=350",
-    youtubeUrl: "https://www.youtube.com/watch?v=example2",
-  },
-  {
-    id: "3",
-    title: "Walking in Faith",
-    date: "April 25, 2023",
-    description: "Pastor Luke teaches how to strengthen your faith through daily spiritual practices.",
-    thumbnailUrl: "/placeholder.svg?height=200&width=350",
-    youtubeUrl: "https://www.youtube.com/watch?v=example3",
-  },
-  {
-    id: "4",
-    title: "Understanding God's Grace",
-    date: "April 21, 2023",
-    description: "A powerful message about God's unconditional grace and how it impacts our lives.",
-    thumbnailUrl: "/placeholder.svg?height=200&width=350",
-    youtubeUrl: "https://www.youtube.com/watch?v=example4",
-  },
-]
+import { useEffect, useState } from "react"
+import { getSermons, type Sermon } from "@/lib/supabase"
+import { Loader2 } from "lucide-react"
 
 export default function SermonsPage() {
   const { translations } = useLanguage()
+  const [sermons, setSermons] = useState<Sermon[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchSermons() {
+      setLoading(true)
+      const { data, error } = await getSermons()
+      if (data) {
+        setSermons(data)
+      } else {
+        // Fallback to sample data if no sermons in database
+        setSermons([
+          {
+            id: "1",
+            title: "Finding Peace in God's Promises",
+            date: "2023-05-01",
+            description: "Pastor Luke explores how God's promises can bring peace in our daily lives.",
+            thumbnail_url: "/placeholder.svg?height=200&width=350",
+            youtube_url: "https://www.youtube.com/watch?v=example1",
+          },
+          {
+            id: "2",
+            title: "The Power of Prayer",
+            date: "2023-04-28",
+            description: "Learn how prayer can transform your relationship with God and others around you.",
+            thumbnail_url: "/placeholder.svg?height=200&width=350",
+            youtube_url: "https://www.youtube.com/watch?v=example2",
+          },
+        ])
+      }
+      setLoading(false)
+    }
+
+    fetchSermons()
+  }, [])
 
   return (
     <div className="flex flex-col space-y-6">
       <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{translations.sermons.title}</h1>
       <p className="text-muted-foreground mb-6">{translations.sermons.subtitle}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sermons.map((sermon) => (
-          <SermonCard key={sermon.id} sermon={sermon} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center items-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sermons.map((sermon) => (
+            <SermonCard key={sermon.id} sermon={sermon} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-function SermonCard({ sermon }: { sermon: any }) {
+function SermonCard({ sermon }: { sermon: Sermon }) {
   const { translations } = useLanguage()
 
   return (
     <Card className="overflow-hidden flex flex-col h-full">
       <div className="relative h-48 w-full">
-        <Image src={sermon.thumbnailUrl || "/placeholder.svg"} alt={sermon.title} fill className="object-cover" />
+        <Image
+          src={sermon.thumbnail_url || "/placeholder.svg?height=200&width=350"}
+          alt={sermon.title}
+          fill
+          className="object-cover"
+        />
       </div>
       <CardContent className="p-4 flex-grow">
-        <div className="text-sm text-muted-foreground mb-2">{sermon.date}</div>
+        <div className="text-sm text-muted-foreground mb-2">{new Date(sermon.date).toLocaleDateString()}</div>
         <h3 className="text-lg font-semibold text-foreground mb-2">{sermon.title}</h3>
         <p className="text-muted-foreground text-sm">{sermon.description}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full" onClick={() => window.open(sermon.youtubeUrl, "_blank")}>
+        <Button className="w-full" onClick={() => window.open(sermon.youtube_url, "_blank")}>
           {translations.sermons.watchButton} <ExternalLink className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
