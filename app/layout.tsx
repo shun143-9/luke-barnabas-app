@@ -4,7 +4,9 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import BottomNav from "@/components/bottom-nav"
+import Header from "@/components/header"
 import { LanguageProvider } from "@/context/language-context"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,9 +25,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-background pb-16`}>
         <LanguageProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark">
+          <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
+            <Header />
             <main className="container mx-auto px-4 py-6 md:py-8">{children}</main>
             <BottomNav />
+            <Toaster />
           </ThemeProvider>
         </LanguageProvider>
       </body>

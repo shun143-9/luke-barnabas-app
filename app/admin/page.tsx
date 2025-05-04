@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { useLanguage } from "@/context/language-context"
 import { signIn } from "@/app/actions"
 import { useFormState } from "react-dom"
+import { Loader2 } from "lucide-react"
 
 const initialState = {
   success: true,
@@ -16,22 +17,32 @@ const initialState = {
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("nitaspirant1439@gmail.com")
   const [password, setPassword] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { translations } = useLanguage()
   const [state, formAction] = useFormState(signIn, initialState)
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsSubmitting(true)
+    try {
+      await formAction(formData)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="flex flex-col items-center justify-center max-w-md mx-auto">
       <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-6">{translations.admin.loginTitle}</h1>
 
       <Card className="w-full">
-        <form action={formAction}>
+        <form action={handleSubmit}>
           <CardHeader>
             <CardTitle>{translations.admin.signIn}</CardTitle>
             <CardDescription>{translations.admin.loginSubtitle}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!state.success && (
-              <div className="p-3 text-sm bg-red-900 text-red-100 border border-red-700 rounded-md">
+              <div className="p-3 text-sm bg-destructive/20 text-destructive-foreground border border-destructive/50 rounded-md">
                 {state.error || "Invalid email or password"}
               </div>
             )}
@@ -62,8 +73,15 @@ export default function AdminLoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              {translations.admin.signIn}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                translations.admin.signIn
+              )}
             </Button>
           </CardFooter>
         </form>

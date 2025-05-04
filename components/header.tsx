@@ -5,10 +5,12 @@ import Link from "next/link"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
+import { useLanguage } from "@/context/language-context"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { translations } = useLanguage()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -23,11 +25,11 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white border-b sticky top-0 z-50">
+    <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center" onClick={closeMenu}>
-            <span className="text-xl font-semibold text-sky-700">Luke Barnabas</span>
+            <span className="text-xl font-semibold text-primary">Luke Barnabas</span>
           </Link>
 
           {/* Mobile menu button */}
@@ -39,16 +41,16 @@ export default function Header() {
 
           {/* Desktop navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <NavLinks isActive={isActive} />
+            <NavLinks isActive={isActive} translations={translations} />
           </nav>
         </div>
       </div>
 
       {/* Mobile navigation */}
       {isMenuOpen && (
-        <nav className="md:hidden bg-white border-b">
+        <nav className="md:hidden bg-background border-b border-border">
           <div className="container mx-auto px-4 py-3 flex flex-col space-y-3">
-            <NavLinks isActive={isActive} onClick={closeMenu} />
+            <NavLinks isActive={isActive} onClick={closeMenu} translations={translations} />
           </div>
         </nav>
       )}
@@ -56,12 +58,20 @@ export default function Header() {
   )
 }
 
-function NavLinks({ isActive, onClick }: { isActive: (path: string) => boolean; onClick?: () => void }) {
+function NavLinks({
+  isActive,
+  onClick,
+  translations,
+}: {
+  isActive: (path: string) => boolean
+  onClick?: () => void
+  translations: any
+}) {
   const links = [
-    { href: "/", label: "Home" },
-    { href: "/sermons", label: "Sermons" },
-    { href: "/meetings", label: "Meeting Updates" },
-    { href: "/settings", label: "Settings" },
+    { href: "/", label: translations.nav.home },
+    { href: "/sermons", label: translations.nav.sermons },
+    { href: "/meetings", label: translations.nav.meetings },
+    { href: "/settings", label: translations.nav.settings },
   ]
 
   return (
@@ -70,8 +80,8 @@ function NavLinks({ isActive, onClick }: { isActive: (path: string) => boolean; 
         <Link
           key={link.href}
           href={link.href}
-          className={`text-base font-medium transition-colors hover:text-sky-600 ${
-            isActive(link.href) ? "text-sky-600" : "text-slate-700"
+          className={`text-base font-medium transition-colors hover:text-primary ${
+            isActive(link.href) ? "text-primary" : "text-foreground"
           }`}
           onClick={onClick}
         >

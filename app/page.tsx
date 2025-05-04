@@ -11,25 +11,44 @@ export default function Home() {
   const [isLive, setIsLive] = useState(false)
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { translations } = useLanguage()
 
   useEffect(() => {
     async function fetchLivestream() {
       setLoading(true)
-      const { data, error } = await getLivestream()
+      setError(null)
 
-      if (data) {
-        setLiveStreamId(data.youtube_id)
-        setIsLive(data.is_live)
-        setDescription(data.description)
-      } else {
-        // Fallback to default values if no data
+      try {
+        const { data, error } = await getLivestream()
+
+        if (error) {
+          console.error("Error fetching livestream:", error)
+          setError("Failed to load livestream data")
+          // Fallback to default values
+          setLiveStreamId("jfKfPfyJRdk")
+          setIsLive(false)
+          setDescription(translations.home.aboutText1)
+        } else if (data) {
+          setLiveStreamId(data.youtube_id)
+          setIsLive(data.is_live)
+          setDescription(data.description)
+        } else {
+          // Fallback to default values if no data
+          setLiveStreamId("jfKfPfyJRdk")
+          setIsLive(false)
+          setDescription(translations.home.aboutText1)
+        }
+      } catch (err) {
+        console.error("Exception fetching livestream:", err)
+        setError("An unexpected error occurred")
+        // Fallback to default values
         setLiveStreamId("jfKfPfyJRdk")
-        setIsLive(true)
+        setIsLive(false)
         setDescription(translations.home.aboutText1)
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchLivestream()
@@ -69,6 +88,12 @@ export default function Home() {
               <p className="text-muted-foreground">{description}</p>
             </CardContent>
           </Card>
+        )}
+
+        {error && (
+          <div className="mt-4 p-4 bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground">
+            {error}
+          </div>
         )}
       </section>
 
