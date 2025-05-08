@@ -18,52 +18,32 @@ export default function Home() {
   const [needsInit, setNeedsInit] = useState(false)
   const { translations } = useLanguage()
 
-  // Function to initialize the database tables
-  const initializeDatabase = async () => {
+  // Function to check and seed the database
+  const checkAndSeedDatabase = async () => {
     setIsInitializing(true)
     setInitError(null)
 
     try {
-      console.log("Initializing database...")
+      console.log("Checking and seeding database...")
+      const response = await fetch("/api/check-and-seed", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
 
-      // Try all methods in sequence until one succeeds
-      const methods = ["/api/init-db-direct", "/api/init-db-fallback", "/api/init-db-simple"]
+      const data = await response.json()
 
-      let success = false
-
-      for (const method of methods) {
-        try {
-          console.log(`Trying initialization method: ${method}`)
-          const response = await fetch(method, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
-
-          if (response.ok) {
-            console.log(`Method ${method} succeeded`)
-            success = true
-            break
-          } else {
-            const errorText = await response.text()
-            console.error(`Method ${method} failed:`, response.status, errorText)
-          }
-        } catch (err) {
-          console.error(`Error with method ${method}:`, err)
-        }
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.message || "Failed to check and seed database")
       }
 
-      if (success) {
-        console.log("Database initialized successfully")
-        // Reload the page to fetch fresh data
-        window.location.reload()
-      } else {
-        throw new Error("All initialization methods failed")
-      }
+      console.log("Database check and seed successful")
+      // Reload the page to fetch fresh data
+      window.location.reload()
     } catch (err: any) {
-      console.error("Error initializing database:", err)
-      setInitError(err.message || "Failed to initialize database. Please try again.")
+      console.error("Error checking and seeding database:", err)
+      setInitError(err.message || "Failed to check and seed database. Please try again.")
     } finally {
       setIsInitializing(false)
     }
@@ -89,10 +69,8 @@ export default function Home() {
 
           // Check if the error is because the table doesn't exist
           if (error.message?.includes("relation") && error.message?.includes("does not exist")) {
-            console.log("Tables don't exist, initializing database automatically...")
+            console.log("Tables don't exist, need to initialize database...")
             setNeedsInit(true)
-            // Automatically initialize the database
-            initializeDatabase()
           } else {
             setError("Failed to load livestream data")
           }
@@ -130,7 +108,7 @@ export default function Home() {
             <Database className="h-12 w-12 text-destructive mb-2" />
             <h2 className="text-xl font-semibold">Database Setup Required</h2>
             <p className="text-muted-foreground">
-              The database tables don't exist yet. We're initializing the database now...
+              The database tables have been created but need to be seeded with initial data.
             </p>
 
             {initError ? (
@@ -138,14 +116,14 @@ export default function Home() {
                 <div className="p-4 w-full bg-destructive/20 border border-destructive/50 rounded-md text-destructive-foreground text-left">
                   {initError}
                 </div>
-                <Button onClick={initializeDatabase} disabled={isInitializing} size="lg" className="mt-2">
+                <Button onClick={checkAndSeedDatabase} disabled={isInitializing} size="lg" className="mt-2">
                   {isInitializing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Initializing...
                     </>
                   ) : (
-                    "Try Again"
+                    "Seed Database"
                   )}
                 </Button>
               </>

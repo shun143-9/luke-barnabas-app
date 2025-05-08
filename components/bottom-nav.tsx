@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Book, Calendar, Settings } from "lucide-react"
+import { Home, Book, Calendar, Settings, Heart } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useLanguage } from "@/context/language-context"
@@ -28,6 +28,11 @@ export default function BottomNav() {
       href: "/meetings",
       icon: Calendar,
       label: translations.nav.meetings,
+    },
+    {
+      href: "/prayer-requests",
+      icon: Heart,
+      label: "Prayer",
     },
     {
       href: "/settings",

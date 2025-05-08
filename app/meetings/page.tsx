@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Clock, MapPin, Video, Loader2, Database } from "lucide-react"
 import { useLanguage } from "@/context/language-context"
 import { useEffect, useState } from "react"
-import { getMeetingsByType, type Meeting } from "@/lib/supabase"
+import { getMeetingsByType, type Meeting, seedSampleData } from "@/lib/supabase"
 
 export default function MeetingsPage() {
   const { translations } = useLanguage()
@@ -23,31 +23,21 @@ export default function MeetingsPage() {
     setInitError(null)
 
     try {
-      console.log("Initializing database...")
-      const response = await fetch("/api/init-db-direct", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      console.log("Seeding database with sample data...")
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to initialize database")
+      // Use the seedSampleData function to populate the database
+      const { success, error } = await seedSampleData()
+
+      if (!success) {
+        throw new Error(error?.message || "Failed to seed database")
       }
 
-      const data = await response.json()
-
-      if (data.success) {
-        console.log("Database initialized successfully")
-        // Reload the page to fetch fresh data
-        window.location.reload()
-      } else {
-        throw new Error(data.error || "Unknown error occurred")
-      }
+      console.log("Database seeded successfully")
+      // Reload the page to fetch fresh data
+      window.location.reload()
     } catch (err: any) {
-      console.error("Error initializing database:", err)
-      setInitError(err.message || "Failed to initialize database. Please try again.")
+      console.error("Error seeding database:", err)
+      setInitError(err.message || "Failed to seed database. Please try again.")
     } finally {
       setIsInitializing(false)
     }
@@ -68,8 +58,6 @@ export default function MeetingsPage() {
           if (morningError.message?.includes("relation") && morningError.message?.includes("does not exist")) {
             console.log("Tables don't exist, initializing database automatically...")
             setNeedsInit(true)
-            // Automatically initialize the database
-            initializeDatabase()
             return // Stop further processing
           } else {
             console.error("Error fetching morning meeting:", morningError)
@@ -145,7 +133,7 @@ export default function MeetingsPage() {
             <Database className="h-12 w-12 text-destructive mb-2" />
             <h2 className="text-xl font-semibold">Database Setup Required</h2>
             <p className="text-muted-foreground">
-              The meetings table doesn't exist yet. We're initializing the database now...
+              The meetings table doesn't exist yet. We need to seed the database with initial data.
             </p>
 
             {initError ? (
@@ -160,7 +148,7 @@ export default function MeetingsPage() {
                       Initializing...
                     </>
                   ) : (
-                    "Try Again"
+                    "Seed Database"
                   )}
                 </Button>
               </>

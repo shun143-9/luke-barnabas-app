@@ -15,86 +15,139 @@ export async function GET() {
 
     console.log("Creating tables using Supabase client...")
 
-    // Create tables one by one using separate queries to isolate any issues
+    // Use the REST API directly to execute SQL
+    const response = await fetch(`${supabaseUrl}/rest/v1/sql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({
+        query: `
+          -- Create livestream table
+          CREATE TABLE IF NOT EXISTS livestream (
+            id SERIAL PRIMARY KEY,
+            youtube_id TEXT NOT NULL,
+            description TEXT,
+            is_live BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        `,
+      }),
+    })
 
-    // Create livestream table
-    const { error: livestreamError } = await supabase.from("_sql").execute(`
-      CREATE TABLE IF NOT EXISTS livestream (
-        id SERIAL PRIMARY KEY,
-        youtube_id TEXT NOT NULL,
-        description TEXT,
-        is_live BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `)
-
-    if (livestreamError) {
-      console.error("Error creating livestream table:", livestreamError)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("SQL API error response:", response.status, errorText)
       return NextResponse.json(
-        { error: `Failed to create livestream table: ${livestreamError.message}` },
+        { error: `Failed to create livestream table: Status ${response.status}, ${errorText}` },
         { status: 500 },
       )
     }
 
     // Create sermons table
-    const { error: sermonsError } = await supabase.from("_sql").execute(`
-      CREATE TABLE IF NOT EXISTS sermons (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        title TEXT NOT NULL,
-        description TEXT,
-        date DATE NOT NULL,
-        youtube_url TEXT NOT NULL,
-        thumbnail_url TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `)
+    const sermonsResponse = await fetch(`${supabaseUrl}/rest/v1/sql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({
+        query: `
+          CREATE TABLE IF NOT EXISTS sermons (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            title TEXT NOT NULL,
+            description TEXT,
+            date DATE NOT NULL,
+            youtube_url TEXT NOT NULL,
+            thumbnail_url TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        `,
+      }),
+    })
 
-    if (sermonsError) {
-      console.error("Error creating sermons table:", sermonsError)
-      return NextResponse.json({ error: `Failed to create sermons table: ${sermonsError.message}` }, { status: 500 })
+    if (!sermonsResponse.ok) {
+      const errorText = await sermonsResponse.text()
+      console.error("SQL API error response (sermons):", sermonsResponse.status, errorText)
+      return NextResponse.json(
+        { error: `Failed to create sermons table: Status ${sermonsResponse.status}, ${errorText}` },
+        { status: 500 },
+      )
     }
 
     // Create meetings table
-    const { error: meetingsError } = await supabase.from("_sql").execute(`
-      CREATE TABLE IF NOT EXISTS meetings (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        title TEXT NOT NULL,
-        meeting_type TEXT NOT NULL,
-        time TEXT NOT NULL,
-        location TEXT,
-        zoom_link TEXT,
-        maps_link TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `)
+    const meetingsResponse = await fetch(`${supabaseUrl}/rest/v1/sql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({
+        query: `
+          CREATE TABLE IF NOT EXISTS meetings (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            title TEXT NOT NULL,
+            meeting_type TEXT NOT NULL,
+            time TEXT NOT NULL,
+            location TEXT,
+            zoom_link TEXT,
+            maps_link TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        `,
+      }),
+    })
 
-    if (meetingsError) {
-      console.error("Error creating meetings table:", meetingsError)
-      return NextResponse.json({ error: `Failed to create meetings table: ${meetingsError.message}` }, { status: 500 })
+    if (!meetingsResponse.ok) {
+      const errorText = await meetingsResponse.text()
+      console.error("SQL API error response (meetings):", meetingsResponse.status, errorText)
+      return NextResponse.json(
+        { error: `Failed to create meetings table: Status ${meetingsResponse.status}, ${errorText}` },
+        { status: 500 },
+      )
     }
 
     // Create prayer_requests table
-    const { error: prayerRequestsError } = await supabase.from("_sql").execute(`
-      CREATE TABLE IF NOT EXISTS prayer_requests (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name TEXT NOT NULL,
-        email TEXT,
-        phone TEXT,
-        request TEXT NOT NULL,
-        is_private BOOLEAN DEFAULT FALSE,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `)
+    const prayerResponse = await fetch(`${supabaseUrl}/rest/v1/sql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({
+        query: `
+          CREATE TABLE IF NOT EXISTS prayer_requests (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            request TEXT NOT NULL,
+            is_private BOOLEAN DEFAULT FALSE,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        `,
+      }),
+    })
 
-    if (prayerRequestsError) {
-      console.error("Error creating prayer_requests table:", prayerRequestsError)
+    if (!prayerResponse.ok) {
+      const errorText = await prayerResponse.text()
+      console.error("SQL API error response (prayer_requests):", prayerResponse.status, errorText)
       return NextResponse.json(
-        { error: `Failed to create prayer_requests table: ${prayerRequestsError.message}` },
+        { error: `Failed to create prayer_requests table: Status ${prayerResponse.status}, ${errorText}` },
         { status: 500 },
       )
     }

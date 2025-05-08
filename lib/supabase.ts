@@ -51,28 +51,22 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
 )
 
-// Helper function to check if a table exists
+// Helper function to check if a table exists - updated to use the correct API
 export async function checkTableExists(tableName: string) {
   try {
-    const { data, error } = await supabase
-      .from("_sql")
-      .select("*")
-      .execute(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public'
-          AND table_name = '${tableName}'
-        );
-      `)
+    // Use a direct query to check if the table exists
+    const { data, error } = await supabase.from(tableName).select("*").limit(1).throwOnError()
 
-    if (error) {
-      console.error(`Error checking if table ${tableName} exists:`, error)
+    // If we get here without an error, the table exists
+    return true
+  } catch (err: any) {
+    // Check if the error is because the table doesn't exist
+    if (err.message && err.message.includes("does not exist")) {
       return false
     }
 
-    return data?.[0]?.exists || false
-  } catch (err) {
-    console.error(`Exception checking if table ${tableName} exists:`, err)
+    // For other errors, log and return false
+    console.error(`Error checking if table ${tableName} exists:`, err)
     return false
   }
 }
@@ -398,5 +392,94 @@ export async function updateMeeting(meeting: Partial<Meeting>) {
   } catch (err) {
     console.error("Exception updating meeting:", err)
     return { data: null, error: err }
+  }
+}
+
+// Add this function to check if all required tables exist
+export async function checkAllTablesExist() {
+  try {
+    const tables = ["livestream", "sermons", "meetings", "prayer_requests"]
+    let allExist = true
+
+    for (const table of tables) {
+      const exists = await checkTableExists(table)
+      if (!exists) {
+        console.log(`Table ${table} does not exist`)
+        allExist = false
+        break
+      }
+    }
+
+    return allExist
+  } catch (err) {
+    console.error("Error checking tables:", err)
+    return false
+  }
+}
+
+// Add this function to seed sample data
+export async function seedSampleData() {
+  try {
+    // Check if livestream has data
+    const { data: livestreamData, error: livestreamError } = await supabase.from("livestream").select("*").limit(1)
+
+    if (!livestreamError && (!livestreamData || livestreamData.length === 0)) {
+      // Insert default livestream
+      await supabase.from("livestream").insert({
+        youtube_id: "jfKfPfyJRdk",
+        description: "Welcome to Luke Barnabas Ministry livestream",
+        is_live: false,
+      })
+    }
+
+    // Check if sermons has data
+    const { data: sermonsData, error: sermonsError } = await supabase.from("sermons").select("*").limit(1)
+
+    if (!sermonsError && (!sermonsData || sermonsData.length === 0)) {
+      // Insert sample sermons
+      await supabase.from("sermons").insert([
+        {
+          title: "Finding Peace in God's Promises",
+          description: "Pastor Luke explores how God's promises can bring peace in our daily lives.",
+          date: "2023-05-01",
+          youtube_url: "https://www.youtube.com/watch?v=example1",
+          thumbnail_url: "/placeholder.svg?height=200&width=350",
+        },
+        {
+          title: "The Power of Prayer",
+          description: "Learn how prayer can transform your relationship with God and others around you.",
+          date: "2023-04-28",
+          youtube_url: "https://www.youtube.com/watch?v=example2",
+          thumbnail_url: "/placeholder.svg?height=200&width=350",
+        },
+      ])
+    }
+
+    // Check if meetings has data
+    const { data: meetingsData, error: meetingsError } = await supabase.from("meetings").select("*").limit(1)
+
+    if (!meetingsError && (!meetingsData || meetingsData.length === 0)) {
+      // Insert sample meetings
+      await supabase.from("meetings").insert([
+        {
+          title: "Morning Prayer & Devotion",
+          meeting_type: "morning",
+          time: "7:00 AM - 8:00 AM",
+          zoom_link: "https://zoom.us/j/example",
+        },
+        {
+          title: "Evening Bible Study",
+          meeting_type: "evening",
+          time: "7:30 PM - 9:00 PM",
+          location: "Community Church Hall",
+          maps_link: "https://maps.google.com/?q=Community+Church+Hall",
+        },
+      ])
+    }
+
+    return { success: true }
+  } catch (err) {
+    console.error("Error seeding data:", err)
+    return { success: false, error: err }
   }
 }

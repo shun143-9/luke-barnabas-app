@@ -83,6 +83,21 @@ type Translations = {
     updateButton: string
     addButton: string
   }
+  prayer: {
+    title: string
+    subtitle: string
+    formTitle: string
+    formSubtitle: string
+    nameLabel: string
+    emailLabel: string
+    phoneLabel: string
+    requestLabel: string
+    privateLabel: string
+    submitButton: string
+    successTitle: string
+    successMessage: string
+    submitAnother: string
+  }
 }
 
 const englishTranslations: Translations = {
@@ -166,6 +181,21 @@ const englishTranslations: Translations = {
     updateButton: "Update",
     addButton: "Add",
   },
+  prayer: {
+    title: "Prayer Requests",
+    subtitle: "Share your prayer needs with us. We are committed to praying for you and your concerns.",
+    formTitle: "Submit a Prayer Request",
+    formSubtitle: "Fill out the form below to submit your prayer request.",
+    nameLabel: "Your Name *",
+    emailLabel: "Email (Optional)",
+    phoneLabel: "Phone (Optional)",
+    requestLabel: "Prayer Request *",
+    privateLabel: "Keep this request private (only visible to the prayer team)",
+    submitButton: "Submit Prayer Request",
+    successTitle: "Prayer Request Submitted",
+    successMessage: "Thank you for sharing your prayer request. Our prayer team will be praying for you.",
+    submitAnother: "Submit Another Request",
+  },
 }
 
 const teluguTranslations: Translations = {
@@ -246,6 +276,21 @@ const teluguTranslations: Translations = {
     mapsLink: "గూగుల్ మ్యాప్స్ లింక్",
     updateButton: "నవీకరించు",
     addButton: "జోడించు",
+  },
+  prayer: {
+    title: "ప్రార్థన అభ్యర్థనలు",
+    subtitle: "మీ ప్రార్థన అవసరాలను మాతో పంచుకోండి. మేము మీ కోసం మరియు మీ ఆందోళనల కోసం ప్రార్థించడానికి కట్టుబడి ఉన్నాము.",
+    formTitle: "ప్రార్థన అభ్యర్థనను సమర్పించండి",
+    formSubtitle: "మీ ప్రార్థన అభ్యర్థనను సమర్పించడానికి దిగువ ఫారమ్‌ను పూరించండి.",
+    nameLabel: "మీ పేరు *",
+    emailLabel: "ఇమెయిల్ (ఐచ్ఛికం)",
+    phoneLabel: "ఫోన్ (ఐచ్ఛికం)",
+    requestLabel: "ప్రార్థన అభ్యర్థన *",
+    privateLabel: "ఈ అభ్యర్థనను ప్రైవేట్‌గా ఉంచండి (ప్రార్థన బృందానికి మాత్రమే కనిపిస్తుంది)",
+    submitButton: "ప్రార్థన అభ్యర్థనను సమర్పించండి",
+    successTitle: "ప్రార్థన అభ్యర్థన సమర్పించబడింది",
+    successMessage: "మీ ప్రార్థన అభ్యర్థనను పంచుకున్నందుకు ధన్యవాదాలు. మా ప్రార్థన బృందం మీ కోసం ప్రార్థిస్తుంది.",
+    submitAnother: "మరొక అభ్యర్థనను సమర్పించండి",
   },
 }
 
